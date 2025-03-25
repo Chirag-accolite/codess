@@ -1,0 +1,51 @@
+package com.example.jsonuploaddemo.model;
+
+public class ManyToManyRelationshipModel extends RelationshipModel {
+    private String tableName;
+    private String leftKey;
+    private String leftTable;
+    private String leftId;
+    private String rightKey;
+    private String rightTable;
+    private String rightId;
+
+    // ✅ Fix: Call the correct constructor
+    public ManyToManyRelationshipModel(
+            String sourceEntity, String targetEntity, String relationshipType,
+            String tableName, String leftKey, String leftTable, String leftId,
+            String rightKey, String rightTable, String rightId) {
+
+        // ✅ Calling the correct constructor of RelationshipModel
+        super(sourceEntity, targetEntity, relationshipType);
+
+        this.tableName = tableName;
+        this.leftKey = leftKey;
+        this.leftTable = leftTable;
+        this.leftId = leftId;
+        this.rightKey = rightKey;
+        this.rightTable = rightTable;
+        this.rightId = rightId;
+    }
+
+    // Getters and setters
+    public String getTableName() { return tableName; }
+    public void setTableName(String tableName) { this.tableName = tableName; }
+
+    public String getLeftKey() { return leftKey; }
+    public void setLeftKey(String leftKey) { this.leftKey = leftKey; }
+
+    public String getLeftTable() { return leftTable; }
+    public void setLeftTable(String leftTable) { this.leftTable = leftTable; }
+
+    public String getLeftId() { return leftId; }
+    public void setLeftId(String leftId) { this.leftId = leftId; }
+
+    public String getRightKey() { return rightKey; }
+    public void setRightKey(String rightKey) { this.rightKey = rightKey; }
+
+    public String getRightTable() { return rightTable; }
+    public void setRightTable(String rightTable) { this.rightTable = rightTable; }
+
+    public String getRightId() { return rightId; }
+    public void setRightId(String rightId) { this.rightId = rightId; }
+}
