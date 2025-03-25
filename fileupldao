@@ -1,0 +1,29 @@
+package com.example.jsonuploaddemo.controller;
+
+import com.example.jsonuploaddemo.service.FileProcessingService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+
+@RestController
+@RequestMapping("/api/upload")
+public class FileUploadController {
+
+    private final FileProcessingService fileProcessingService;
+
+    public FileUploadController(FileProcessingService fileProcessingService) {
+        this.fileProcessingService = fileProcessingService;
+    }
+
+    @PostMapping
+    public ResponseEntity<String> uploadJsonFile(@RequestParam("file") MultipartFile file) {
+        try {
+            fileProcessingService.processJsonFile(file);
+            return ResponseEntity.ok("File processed successfully!");
+        } catch (IOException e) {
+            return ResponseEntity.badRequest().body("Error processing file: " + e.getMessage());
+        }
+    }
+}
