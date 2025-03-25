@@ -1,0 +1,74 @@
+package com.example.jsonuploaddemo.model;
+
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+
+public class EntityModel {
+    private String name;
+    private List<AttributeModel> attributes;
+    private boolean isAssociation;
+
+    private List<Map<String, String>> relationships;
+    private List<Map<String, String>> manyToManyRelationships;
+
+    // Default constructor (for Jackson)
+    public EntityModel() {
+        this.attributes = new ArrayList<>();
+        this.relationships = new ArrayList<>();
+        this.manyToManyRelationships = new ArrayList<>();
+    }
+
+    // Constructor with parameters
+    public EntityModel(String name, List<AttributeModel> attributes) {
+        this.name = name;
+        this.attributes = attributes != null ? attributes : new ArrayList<>();
+        this.relationships = new ArrayList<>();
+        this.manyToManyRelationships = new ArrayList<>();
+    }
+
+    // Getter & Setter for name
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    // Getter & Setter for attributes
+    public List<AttributeModel> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(List<AttributeModel> attributes) {
+        this.attributes = attributes;
+    }
+
+    // Getter & Setter for isAssociation
+    public boolean isAssociation() {
+        return isAssociation;
+    }
+
+    public void setAssociation(boolean association) {
+        isAssociation = association;
+    }
+
+    // ✅ Getter & Setter for relationships
+    public List<Map<String, String>> getRelationships() {
+        return relationships;
+    }
+
+    public void setRelationships(List<Map<String, String>> relationships) {
+        this.relationships = relationships != null ? relationships : new ArrayList<>();
+    }
+
+    // ✅ Fixed Getter & Setter for many-to-many relationships
+    public List<Map<String, String>> getManyToManyRelationships() {  // ❌ FIXED return type
+        return manyToManyRelationships;
+    }
+
+    public void setManyToManyRelationships(List<Map<String, String>> manyToManyRelationships) {
+        this.manyToManyRelationships = manyToManyRelationships != null ? manyToManyRelationships : new ArrayList<>();
+    }
+}
