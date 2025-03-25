@@ -1,0 +1,28 @@
+
+package com.example.jsonuploaddemo.service;
+
+import com.example.jsonuploaddemo.model.MetaModel;
+import com.example.jsonuploaddemo.util.JsonValidationUtil;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+@Service
+public class FileProcessingService {
+
+    public void processJsonFile(MultipartFile file) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try (InputStream inputStream = file.getInputStream()) {
+            JsonNode jsonNode = objectMapper.readTree(inputStream);
+            if (!JsonValidationUtil.validateJsonStructure(jsonNode)) {
+                throw new IllegalArgumentException("Invalid JSON structure");
+            }
+            MetaModel metaModel = objectMapper.treeToValue(jsonNode, MetaModel.class);
+            JsonValidationUtil.generateFlaskFiles(metaModel);
+        }
+    }
+}
