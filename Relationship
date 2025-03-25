@@ -1,0 +1,92 @@
+package com.example.jsonuploaddemo.model;
+
+public class RelationshipModel {
+    private String sourceEntity;
+    private String targetEntity;
+    private String relationshipType;
+    private String relationshipName; // Name of the relationship variable
+    private String backref; // Back reference (optional)
+    private String lazy; // Lazy loading type
+
+
+    // ✅ Add this constructor
+    public RelationshipModel(String sourceEntity, String targetEntity, String relationshipType) {
+        this.sourceEntity = sourceEntity;
+        this.targetEntity = targetEntity;
+        this.relationshipType = relationshipType;
+    }
+
+
+    public RelationshipModel() {
+    }
+
+    public RelationshipModel(String sourceEntity, String targetEntity, String relationshipType,
+                             String relationshipName, String backref, String lazy) {
+        this.sourceEntity = sourceEntity;
+        this.targetEntity = targetEntity;
+        this.relationshipType = relationshipType;
+        this.relationshipName = relationshipName;
+        this.backref = backref;
+        this.lazy = lazy;
+    }
+
+    public String getSourceEntity() {
+        return sourceEntity;
+    }
+
+    public void setSourceEntity(String sourceEntity) {
+        this.sourceEntity = sourceEntity;
+    }
+
+    public String getTargetEntity() {
+        return targetEntity;
+    }
+
+    public void setTargetEntity(String targetEntity) {
+        this.targetEntity = targetEntity;
+    }
+
+    public String getRelationshipType() {
+        return relationshipType;
+    }
+
+    public void setRelationshipType(String relationshipType) {
+        this.relationshipType = relationshipType;
+    }
+
+    public String getRelationshipName() {
+        return relationshipName;
+    }
+
+    public void setRelationshipName(String relationshipName) {
+        this.relationshipName = relationshipName;
+    }
+
+    public String getBackref() {
+        return backref;
+    }
+
+    public void setBackref(String backref) {
+        this.backref = backref;
+    }
+
+    public String getLazy() {
+        return lazy;
+    }
+
+    public void setLazy(String lazy) {
+        this.lazy = lazy;
+    }
+
+    public String getArgs() {
+        StringBuilder args = new StringBuilder();
+        if (backref != null && !backref.isEmpty()) {
+            args.append("backref=\"").append(backref).append("\", ");
+        }
+        if (lazy != null && !lazy.isEmpty()) {
+            args.append("lazy=\"").append(lazy).append("\"");
+        }
+        return args.toString();
+    }
+
+}
