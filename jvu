@@ -1,0 +1,244 @@
+package com.example.jsonuploaddemo.util;
+import com.example.jsonuploaddemo.model.AttributeModel;
+import com.example.jsonuploaddemo.model.ManyToManyRelationshipModel;
+import com.example.jsonuploaddemo.model.RelationshipModel;
+import com.example.jsonuploaddemo.model.MetaModel;
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.Mustache;
+import com.github.mustachejava.MustacheFactory;
+import com.fasterxml.jackson.databind.JsonNode;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+
+public class JsonValidationUtil {
+
+    private static final String OUTPUT_DIR = "flask_project/";
+
+    public static boolean validateJsonStructure(JsonNode jsonNode) {
+        return jsonNode.has("entities") && jsonNode.has("relationships");
+    }
+//    private static String mapJavaToSQLAlchemy(String javaType) {
+//        switch (javaType) {
+//            case "int":
+//            case "Integer": return "db.Integer";
+//            case "long":
+//            case "Long": return "db.BigInteger";
+//            case "double":
+//            case "Double": return "db.Float";
+//            case "float":
+//            case "Float": return "db.Float";
+//            case "boolean":
+//            case "Boolean": return "db.Boolean";
+//            case "LocalDate": return "db.Date";
+//            case "LocalDateTime": return "db.DateTime";
+//            case "String": return "db.String(255)";  // Default string length 255
+//            default: return "db.String(255)"; // Default fallback
+//        }
+//    }
+private static String mapJavaToSQLAlchemy(AttributeModel attribute) {
+    String sqlType;
+    switch (attribute.getType()) {
+        case "int": sqlType = "db.Integer"; break;
+        case "String": sqlType = "db.String(255)"; break;
+        case "double": sqlType = "db.Float"; break;
+        case "boolean": sqlType = "db.Boolean"; break;
+        case "LocalDate": sqlType = "db.Date"; break;
+        case "LocalDateTime": sqlType = "db.DateTime"; break;
+        default: sqlType = "db.String(255)"; // Default fallback
+    }
+
+    StringBuilder columnDef = new StringBuilder(sqlType);
+    if (attribute.isPrimaryKey()) columnDef.append(", primary_key=True");
+    if (!attribute.isNullable()) columnDef.append(", nullable=False");
+    if (attribute.getDefaultValue() != null) columnDef.append(", default=" + attribute.getDefaultValue());
+
+    return columnDef.toString();
+}
+
+
+//private static String mapJavaToSQLAlchemy(String javaType) {
+//    switch (javaType) {
+//        case "Integer": return "db.Integer";
+//        case "Long": return "db.BigInteger";
+//        case "Double": return "db.Float";  // Handle Double as Float in SQLAlchemy
+//        case "Float": return "db.Float";
+//        case "Boolean": return "db.Boolean";
+//        case "Date": return "db.Date";
+//        case "DateTime": return "db.DateTime";
+//        case "String": return "db.String(255)";  // Default string length 255
+//        default: return "db.String(255)"; // Default fallback
+//    }
+//}
+
+
+
+    public static void generateFlaskFiles(MetaModel metaModel) {
+        try {
+            createFlaskProjectStructure();
+            generateModels(metaModel);
+            generateServices(metaModel);
+            generateRoutes(metaModel);
+            generateCoreFiles(metaModel);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void createFlaskProjectStructure() throws IOException {
+        String[] directories = {
+                OUTPUT_DIR + "app/",
+                OUTPUT_DIR + "app/models/",
+                OUTPUT_DIR + "app/routes/",
+                OUTPUT_DIR + "app/services/"
+        };
+
+        for (String dir : directories) {
+            Files.createDirectories(Path.of(dir));
+        }
+    }
+
+    private static void generateModels(MetaModel metaModel) throws IOException {
+        for (String entity : metaModel.getEntities().keySet()) {
+            Map<String, Object> context = new HashMap<>();
+
+            context.put("entity_name", entity);
+            context.put("entity_name_lower", entity.toLowerCase());
+
+            // Fix fields
+            List<Map<String, Object>> fieldsList = new ArrayList<>();
+            for (AttributeModel attribute : metaModel.getEntities().get(entity).getAttributes()) {
+                Map<String, Object> fieldMap = new HashMap<>();
+                fieldMap.put("field_name", attribute.getName());
+                String fieldType = mapJavaToSQLAlchemy(attribute); // ✅ Pass the whole AttributeModel object
+
+
+                // ✅ Ensure correct Mustache variables are set
+                fieldMap.put("field_type", fieldType);
+                fieldMap.put("is_int", fieldType.equals("db.Integer"));
+                fieldMap.put("is_string", fieldType.startsWith("db.String"));
+                fieldMap.put("is_double", fieldType.equals("db.Float"));
+                fieldMap.put("is_boolean", fieldType.equals("db.Boolean"));
+                fieldMap.put("is_date", fieldType.equals("db.Date"));
+                fieldMap.put("is_datetime", fieldType.equals("db.DateTime"));
+
+                fieldsList.add(fieldMap);
+            }
+            context.put("fields", fieldsList);
+
+            // ✅ Fix Many-to-Many relationships
+            List<Map<String, Object>> manyToManyList = new ArrayList<>();
+            List<ManyToManyRelationshipModel> manyToManyRelationships = metaModel.getManyToManyRelationships(entity);
+
+            for (ManyToManyRelationshipModel mtm : manyToManyRelationships) {
+                Map<String, Object> mtmMap = new HashMap<>();
+                mtmMap.put("relationship_table", mtm.getTableName());
+                mtmMap.put("left_key", mtm.getLeftKey());
+                mtmMap.put("left_table", mtm.getLeftTable());
+                mtmMap.put("left_id", mtm.getLeftId());
+                mtmMap.put("right_key", mtm.getRightKey());
+                mtmMap.put("right_table", mtm.getRightTable());
+                mtmMap.put("right_id", mtm.getRightId());
+                manyToManyList.add(mtmMap);
+            }
+            context.put("many_to_many", manyToManyList);
+            // ✅ Fix Foreign Keys
+            List<Map<String, Object>> foreignKeysList = new ArrayList<>();
+            for (AttributeModel attribute : metaModel.getEntities().get(entity).getAttributes()) {
+                if (attribute.getForeignKey() != null) {
+                    Map<String, Object> fkMap = new HashMap<>();
+                    fkMap.put("field_name", attribute.getName());
+                    fkMap.put("referenced_table", attribute.getForeignKey().getReferencedTable().toLowerCase());
+                    fkMap.put("referenced_column", attribute.getForeignKey().getReferencedColumn());
+                    fkMap.put("nullable", attribute.isNullable() ? "False" : "True"); // Ensure Boolean is correctly formatted
+                    foreignKeysList.add(fkMap);
+                }
+            }
+            context.put("foreign_keys", foreignKeysList);
+
+
+            generateFileFromTemplate("templates/models.mustache", context,
+                    OUTPUT_DIR + "app/models/" + entity.toLowerCase() + "_models.py");
+        }
+    }
+
+
+    private static void generateServices(MetaModel metaModel) throws IOException {
+        for (String entity : metaModel.getEntities().keySet()) {
+            Map<String, Object> context = new HashMap<>();
+            context.put("entity_name", entity);
+            context.put("entity_var", entity.toLowerCase());
+            context.put("fields", metaModel.getEntities().get(entity).getAttributes());
+
+            generateFileFromTemplate("templates/services.mustache", context,
+                    OUTPUT_DIR + "app/services/" + entity.toLowerCase() + "_service.py");
+        }
+    }
+
+
+    private static void generateRoutes(MetaModel metaModel) throws IOException {
+        for (String entity : metaModel.getEntities().keySet()) {
+            if (metaModel.getEntities().get(entity).isAssociation()) {
+                continue; // Skip association entities
+            }
+
+            Map<String, Object> context = new HashMap<>();
+            context.put("entity_name", entity);
+            context.put("entity_name_lower", entity.toLowerCase());
+            context.put("fields", metaModel.getEntities().get(entity).getAttributes());
+
+            generateFileFromTemplate("templates/routes.mustache", context,
+                    OUTPUT_DIR + "app/routes/" + entity.toLowerCase() + "_routes.py");
+        }
+    }
+
+
+    private static void generateCoreFiles(MetaModel metaModel) throws IOException {
+        Map<String, Object> configContext = new HashMap<>();
+        configContext.put("default_db_uri", "postgresql://user:password@localhost:5432/mydatabase");
+        configContext.put("default_secret_key", "mysecretkey123");
+        configContext.put("default_debug", "true");
+
+        generateFileFromTemplate("templates/config.mustache", configContext, OUTPUT_DIR + "config.py");
+
+        // 💡 Extract routes from metaModel and add to context
+        List<Map<String, String>> routes = new ArrayList<>();
+        for (String entity : metaModel.getEntities().keySet()) {
+            if (!metaModel.getEntities().get(entity).isAssociation()) {
+                Map<String, String> routeInfo = new HashMap<>();
+                routeInfo.put("route_file", entity.toLowerCase() + "_routes");
+                routeInfo.put("route_variable", entity.toLowerCase() + "_bp");
+                routeInfo.put("url_prefix", "/" + entity.toLowerCase());
+                routes.add(routeInfo);
+            }
+        }
+
+        // 💡 Pass the `routes` list to the Mustache context
+        Map<String, Object> appContext = new HashMap<>();
+        appContext.put("routes", routes);
+
+        generateFileFromTemplate("templates/init.mustache", appContext, OUTPUT_DIR + "app/__init__.py");
+
+        String[] coreFiles = {"main", "db_config", "associations"};
+        for (String file : coreFiles) {
+            generateFileFromTemplate("templates/" + file + ".mustache", new HashMap<>(), OUTPUT_DIR + file + ".py");
+        }
+    }
+
+
+
+    private static void generateFileFromTemplate(String templatePath, Map<String, Object> context, String outputPath) throws IOException {
+        File file = new File(outputPath);
+        try (InputStream inputStream = JsonValidationUtil.class.getClassLoader().getResourceAsStream(templatePath);
+             Reader reader = new InputStreamReader(Objects.requireNonNull(inputStream), StandardCharsets.UTF_8);
+             Writer writer = new FileWriter(file)) {
+
+            MustacheFactory mf = new DefaultMustacheFactory();
+            Mustache mustache = mf.compile(reader, outputPath);
+            mustache.execute(writer, context).flush();
+        }
+    }
+}
