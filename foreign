@@ -1,0 +1,20 @@
+package com.example.jsonuploaddemo.model;
+
+public class ForeignKeyModel {
+    private String referencedTable;
+    private String referencedColumn;
+
+    public ForeignKeyModel(String referencedTable, String referencedColumn) {
+        this.referencedTable = referencedTable;
+        this.referencedColumn = referencedColumn;
+    }
+
+    public String getReferencedTable() {
+        return referencedTable;
+    }
+
+    public String getReferencedColumn() {
+        return referencedColumn;
+    }
+}
+
