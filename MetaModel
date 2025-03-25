@@ -1,0 +1,71 @@
+package com.example.jsonuploaddemo.model;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+public class MetaModel {
+    private Map<String, EntityModel> entities;
+    private Map<String, String> relationships; // Stores relationship mappings
+
+    public MetaModel() {
+    }
+
+    public MetaModel(Map<String, EntityModel> entities, Map<String, String> relationships) {
+        this.entities = entities;
+        this.relationships = relationships;
+    }
+
+    public Map<String, EntityModel> getEntities() {
+        return entities;
+    }
+
+    public void setEntities(Map<String, EntityModel> entities) {
+        this.entities = entities;
+        for (String entity : entities.keySet()) {
+            if (isAssociationEntity(entity)) {
+                entities.get(entity).setAssociation(true);
+            }
+        }
+    }
+
+    private boolean isAssociationEntity(String entity) {
+        return entity.toLowerCase().contains("association") || entity.endsWith("_map");
+    }
+
+    public Map<String, String> getRelationships() {
+        return relationships;
+    }
+
+    public void setRelationships(Map<String, String> relationships) {
+        this.relationships = relationships;
+    }
+
+    // ✅ Fixed: Correctly extract Many-to-Many relationships
+    public List<ManyToManyRelationshipModel> getManyToManyRelationships(String entity) {
+        List<ManyToManyRelationshipModel> manyToManyList = new ArrayList<>();
+
+        for (Map.Entry<String, String> entry : relationships.entrySet()) {
+            if ("Many-to-Many".equals(entry.getValue())) {
+                String key = entry.getKey();
+                String[] entities = key.split("_to_");
+
+                if (entities.length == 2) {
+                    String leftEntity = entities[0];
+                    String rightEntity = entities[1];
+
+                    if (leftEntity.equals(entity) || rightEntity.equals(entity)) {
+                        manyToManyList.add(new ManyToManyRelationshipModel(
+                                leftEntity, rightEntity, "Many-to-Many",
+                                key, // Table name
+                                leftEntity.toLowerCase() + "_id", leftEntity, "id",
+                                rightEntity.toLowerCase() + "_id", rightEntity, "id"
+                        ));
+                    }
+                }
+            }
+        }
+        return manyToManyList;
+    }
+
+}
